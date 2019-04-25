@@ -2,19 +2,33 @@
 dependency:
   name: galaxy
 driver:
-  name: docker
+  name: vagrant
+  provider:
+      name: virtualbox
 lint:
   name: yamllint
+  options:
+    config-data:
+      ignore: "**venv/"
 platforms:
   - name: instance
-    image: centos:7
+    box: centos/7
+    memory: 8192
+    cpus: 2
+    interfaces:
+      - auto_config: true
+        network_name: private_network
+        type: static
+        ip: 192.168.50.20
 provisioner:
   name: ansible
   lint:
     name: ansible-lint
+    options:
+      x: ['ANSIBLE0016']
 scenario:
   name: default
 verifier:
   name: testinfra
-  lint:
+  lint: 
     name: flake8

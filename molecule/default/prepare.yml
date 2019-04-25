@@ -1,0 +1,30 @@
+---
+- name: Prepare
+  hosts: all
+  gather_facts: false
+  become: true
+  tasks:
+    - name: set /etc/hosts
+      lineinfile:
+        path: /etc/hosts
+        line: "192.168.50.20 foreman.test.com foreman"
+
+    - name: selinux
+      yum:
+        name: libselinux-python
+        state: present
+
+    - name: set hostname
+      hostname:
+        name: foreman.test.com
+
+    - name: start firewalld
+      service:
+        name: firewalld
+        state: started
+        enabled: true
+
+    - name: selinux enforce
+      selinux:
+        state: enforcing
+        policy: targeted
