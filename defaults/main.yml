@@ -1,2 +1,5 @@
 ---
 # defaults file for foreman-server
+foreman_admin_username: admin
+katello_version: latest
+foreman_version: latest
