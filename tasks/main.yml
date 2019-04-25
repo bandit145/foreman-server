@@ -1,2 +1,82 @@
 ---
 # tasks file for foreman-server
+
+- name: main | firewalld
+  firewalld:
+    port: "{{ item }}"
+    permanent: true
+    state: enabled
+    immediate: true
+  loop:
+    - 80/tcp
+    - 443/tcp
+    - 5647/tcp
+    - 9090/tcp
+    - 69/udp
+
+- name: main | install repos
+  yum:
+    name:
+      - https://fedorapeople.org/groups/katello/releases/yum/{{ katello_version }}/katello/el7/x86_64/katello-repos-latest.rpm
+      - https://yum.theforeman.org/releases/{{ foreman_version }}/el7/x86_64/foreman-release.rpm
+      - https://yum.puppetlabs.com/puppetlabs-release-pc1-el-7.noarch.rpm
+      - epel-release
+    state: present
+
+- name: main | install foreman-release-scl
+  yum:
+    name: foreman-release-scl
+    state: present
+
+- name: main | install foreman-installer
+  yum:
+    name:
+      - python2-django
+      - subscription-manager
+      - katello
+      - rubygem-foreman_maintain
+    state: present
+
+- name: main | is foreman installed
+  stat:
+    path: /etc/foreman/client_key.pem
+  register: foreman_installed
+
+- name: main | foreman-installer template
+  template:
+    src: katello-answers.yaml
+    dest: /etc/foreman-installer/scenarios.d/katello-answers.yaml
+  when: not foreman_installed.stat.exists
+
+- name: main | foreman-installer
+  command: foreman-installer --scenario katello
+  no_log: false
+  when: not foreman_installed.stat.exists
+
+- name: main | remove answer file
+  file:
+    path: /etc/foreman-installer/scenarios.d/katello-answers.yaml
+    state: absent
+
+- name: main | disable repos
+  ini_file:
+    path: /etc/yum.repos.d/{{ item }}.repo
+    section: "{{ item }}"
+    option: enabled
+    value: 0
+  loop:
+    - foreman-plugins
+    - foreman-rails
+    - foreman
+    - puppetlabs-pc1
+
+- name: main | disable katello repos
+  ini_file:
+    path: /etc/yum.repos.d/katello.repo
+    section: "{{ item }}"
+    option: enabled
+    value: 0
+  loop:
+    - katello
+    - pulp
+    - katello-candlepin
